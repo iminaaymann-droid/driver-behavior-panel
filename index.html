@@ -27,7 +27,7 @@
     }
     .app{
       width:100%;
-      max-width:900px;
+      max-width:1100px;
       background:radial-gradient(circle at top,#0b1120 0,#020617 55%);
       border-radius:16px;
       padding:14px;
@@ -60,9 +60,9 @@
     .layout{
       display:grid;
       gap:10px;
-      grid-template-columns:1.2fr 1fr;
+      grid-template-columns:1.1fr 1fr;
     }
-    @media (max-width: 780px){
+    @media (max-width: 900px){
       .layout{
         grid-template-columns:1fr;
       }
@@ -77,6 +77,32 @@
       margin:0 0 8px 0;
       font-size:15px;
     }
+
+    /* ------ canvas car area ----- */
+    .canvas-wrap{
+      position:relative;
+      border-radius:14px;
+      overflow:hidden;
+    }
+    #roadCanvas{
+      width:100%;
+      height:340px;
+      border-radius:12px;
+      display:block;
+      background:linear-gradient(180deg,#020617,#020617);
+    }
+    .canvas-caption{
+      position:absolute;
+      top:8px;
+      left:12px;
+      font-size:11px;
+      opacity:.85;
+      background:rgba(15,23,42,.8);
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.4);
+    }
+
     .speed-display{
       display:flex;
       align-items:center;
@@ -302,60 +328,67 @@
       <div>
         <div class="title">Driver Behavior Control Panel</div>
         <div class="subtitle">
-          Mobile-friendly Speedometer + Overspeed Detection + Driver Scoring (IoT-style simulation).
+          Mobile-friendly Speedometer + Overspeed Detection + Driver Scoring (IoT-style simulation) with car animation.
         </div>
       </div>
       <div class="badge">Speedometer Sensor — Software Simulation</div>
     </div>
 
     <div class="layout">
-      <!-- Left: Speed + Status -->
-      <div class="card">
-        <h2>Speedometer & Status</h2>
-        <div class="speed-display">
-          <div class="gauge">
-            <div class="gauge-inner">
-              <div class="label-small">Current Speed</div>
-              <div class="speed-value" id="speedVal">0</div>
-              <div class="unit">km/h</div>
-            </div>
-          </div>
-          <div>
-            <div class="pill">
-              <span class="pill-dot"></span>
-              <span id="modeLabel">Mode: Normal</span>
-            </div>
-            <div style="margin-top:6px">
-              <div class="label-small">Status</div>
-              <div id="statusBadge" class="indicator ind-safe">
-                ● Safe — within limit
-              </div>
-            </div>
-            <div class="stats">
-              <div class="stat-box">
-                <div class="stat-label">Time</div>
-                <div class="stat-value" id="timeVal">0 s</div>
-              </div>
-              <div class="stat-box">
-                <div class="stat-label">Speed Limit</div>
-                <div class="stat-value"><span id="limitVal">120</span> km/h</div>
-              </div>
-              <div class="stat-box">
-                <div class="stat-label">Max Speed</div>
-                <div class="stat-value" id="maxVal">0 km/h</div>
-              </div>
-              <div class="stat-box">
-                <div class="stat-label">Average Speed</div>
-                <div class="stat-value" id="avgVal">0 km/h</div>
-              </div>
-            </div>
-          </div>
+      <!-- LEFT: road + speed/status -->
+      <div>
+        <div class="card canvas-wrap">
+          <canvas id="roadCanvas"></canvas>
+          <div class="canvas-caption">Car motion is linked to the simulated speed sensor readings.</div>
         </div>
 
-        <div class="summary" id="summaryBox" style="display:none"></div>
+        <div class="card" style="margin-top:8px">
+          <h2>Speedometer & Status</h2>
+          <div class="speed-display">
+            <div class="gauge">
+              <div class="gauge-inner">
+                <div class="label-small">Current Speed</div>
+                <div class="speed-value" id="speedVal">0</div>
+                <div class="unit">km/h</div>
+              </div>
+            </div>
+            <div>
+              <div class="pill">
+                <span class="pill-dot"></span>
+                <span id="modeLabel">Mode: Normal</span>
+              </div>
+              <div style="margin-top:6px">
+                <div class="label-small">Status</div>
+                <div id="statusBadge" class="indicator ind-safe">
+                  ● Safe — within limit
+                </div>
+              </div>
+              <div class="stats">
+                <div class="stat-box">
+                  <div class="stat-label">Time</div>
+                  <div class="stat-value" id="timeVal">0 s</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-label">Speed Limit</div>
+                  <div class="stat-value"><span id="limitVal">120</span> km/h</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-label">Max Speed</div>
+                  <div class="stat-value" id="maxVal">0 km/h</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-label">Average Speed</div>
+                  <div class="stat-value" id="avgVal">0 km/h</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="summary" id="summaryBox" style="display:none"></div>
+        </div>
       </div>
 
-      <!-- Right: Controls + Log -->
+      <!-- RIGHT: controls + log -->
       <div class="card">
         <h2>Controls & Data</h2>
         <div class="controls-main">
@@ -401,13 +434,119 @@
 
         <div class="footer">
           Description: The panel simulates a car speed sensor. Gas / Brake buttons control speed,
-          the sensor logs readings every second, detects overspeeding, and produces a driver rating.
+          the sensor logs readings every second, detects overspeeding, animates the car on a road,
+          and produces a driver rating.
         </div>
       </div>
     </div>
   </div>
 
 <script>
+/* ----------- CANVAS (car + road) ------------- */
+const roadCanvas = document.getElementById('roadCanvas');
+const rctx = roadCanvas.getContext('2d');
+function resizeCanvas(){
+  roadCanvas.width = roadCanvas.clientWidth;
+  roadCanvas.height = roadCanvas.clientHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+let carX = 0;
+let laneOffset = 0; // لتحريك الخطوط
+
+function drawRoad(currentSpeed, status){
+  const w = roadCanvas.width;
+  const h = roadCanvas.height;
+  rctx.clearRect(0,0,w,h);
+
+  // خلفية الطريق
+  if(status === 'VIOLATION'){
+    rctx.fillStyle = '#111827';
+  } else if(status === 'WARNING'){
+    rctx.fillStyle = '#020617';
+  } else {
+    rctx.fillStyle = '#020617';
+  }
+  rctx.fillRect(0,0,w,h);
+
+  // جانبين الطريق
+  rctx.fillStyle = '#020617';
+  rctx.fillRect(0,0, w, h);
+
+  // الطريق الرمادي
+  rctx.fillStyle = '#020617';
+  rctx.fillRect(w*0.15,0, w*0.7, h);
+
+  // خطوط جانبية
+  rctx.fillStyle = '#111827';
+  rctx.fillRect(w*0.17,0, 4, h);
+  rctx.fillRect(w*0.79,0, 4, h);
+
+  // خطوط متقطعة وسط الطريق (بتتحرك حسب السرعة)
+  const dashH = 26;
+  const gap = 22;
+  const midX = w*0.48;
+  laneOffset += (currentSpeed/40); // أسرع كلما السرعة زادت
+  if(laneOffset > (dashH+gap)) laneOffset = 0;
+
+  rctx.fillStyle = 'rgba(248,250,252,0.6)';
+  for(let y=-dashH; y < h+dashH; y += (dashH+gap)){
+    rctx.fillRect(midX, y + laneOffset, 4, dashH);
+  }
+
+  // تحديث موضع العربية يمين/شمال بسيط حسب المود (بس منظر)
+  const targetLane = status === 'VIOLATION' ? w*0.63 : (status === 'WARNING' ? w*0.52 : w*0.41);
+  carX += (targetLane - carX) * 0.08;
+
+  const carY = h*0.7;
+  const carW = 60;
+  const carH = 28;
+
+  // ظل العربية
+  rctx.fillStyle = 'rgba(15,23,42,0.8)';
+  rctx.beginPath();
+  rctx.ellipse(carX+carW/2, carY+carH/2+6, carW*0.6, carH*0.5, 0, 0, Math.PI*2);
+  rctx.fill();
+
+  // جسم العربية
+  let carColor = '#22c55e';
+  if(status === 'VIOLATION') carColor = '#ef4444';
+  else if(status === 'WARNING') carColor = '#facc15';
+
+  rctx.fillStyle = carColor;
+  rctx.roundRect(carX, carY, carW, carH, 6);
+  rctx.fill();
+
+  // زجاج
+  rctx.fillStyle = 'rgba(15,23,42,0.9)';
+  rctx.roundRect(carX+8, carY+4, carW-16, 10, 4);
+  rctx.fill();
+
+  // عجلات
+  rctx.fillStyle = '#020617';
+  rctx.fillRect(carX+6, carY+carH-4, 12,4);
+  rctx.fillRect(carX+carW-18, carY+carH-4, 12,4);
+}
+
+/* تعديل roundRect لو مش موجود في بعض المتصفحات القديمة */
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    if(typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+    this.beginPath();
+    this.moveTo(x+r.tl,y);
+    this.lineTo(x+w-r.tr,y);
+    this.quadraticCurveTo(x+w,y,x+w,y+r.tr);
+    this.lineTo(x+w,y+h-r.br);
+    this.quadraticCurveTo(x+w,y+h,x+w-r.br,y+h);
+    this.lineTo(x+r.bl,y+h);
+    this.quadraticCurveTo(x,y+h,x,y+h-r.bl);
+    this.lineTo(x,y+r.tl);
+    this.quadraticCurveTo(x,y,x+r.tl,y);
+    this.closePath();
+  }
+}
+
 /* ----------------- STATE ------------------- */
 let running = false;
 let elapsed = 0;
@@ -506,10 +645,10 @@ btnReset.addEventListener('click', ()=>{
   statusBadge.className = 'indicator ind-safe';
   statusBadge.textContent = '● Safe — within limit';
   log('Reset');
+  drawRoad(0,'OK');
 });
 
 btnGas.addEventListener('click', ()=>{
-  // manual gas: small burst
   speed += currentMode.accel * 4;
   if(speed > currentMode.top) speed = currentMode.top;
   log('Gas pressed: speed ~ ' + Math.round(speed) + ' km/h');
@@ -545,22 +684,22 @@ btnCSV.addEventListener('click', ()=>{
 
 /* ----------------- PHYSICS ------------------- */
 function updatePhysics(dt){
-  // Natural drag
+  // drag
   speed -= 0.6 * dt * 10;
   if(speed < 0) speed = 0;
 
-  // Autopilot tries to reach naturalMax
   if(autopilot){
     const target = currentMode.naturalMax;
     if(speed < target) speed += currentMode.accel * dt * 15;
     else speed -= currentMode.accel * dt * 8;
   }
 
-  // Clamp top
   if(speed > currentMode.top) speed = currentMode.top + Math.random()*5;
 }
 
 /* ----------------- SAMPLING & STATUS ------------------- */
+let lastStatus = 'OK';
+
 function sample(){
   const t = Math.round(elapsed);
   const s = Math.round(speed);
@@ -573,14 +712,12 @@ function sample(){
   readings.push({t, speed:s, status});
   if(s > maxSpeed) maxSpeed = s;
 
-  // UI updates
   speedVal.textContent = s;
   timeVal.textContent = t + ' s';
   maxVal.textContent = maxSpeed + ' km/h';
   const avg = readings.reduce((a,b)=>a+b.speed,0) / readings.length;
   avgVal.textContent = Math.round(avg) + ' km/h';
 
-  // status badge
   if(status === 'OK'){
     statusBadge.className = 'indicator ind-safe';
     statusBadge.textContent = '● Safe — within limit';
@@ -593,6 +730,7 @@ function sample(){
     overspeedCount++;
   }
 
+  lastStatus = status;
   log(`t=${t}s | speed=${s} km/h | status=${status}`);
 }
 
@@ -621,7 +759,7 @@ function showSummary(){
     <div>Driver rating: <strong>${rating}</strong></div>
     <div style="margin-top:6px;font-size:11px;opacity:.85">
       This panel represents a software-only Speedometer sensor in a connected car,
-      with real-time monitoring + driver behavior scoring logic.
+      with real-time monitoring, car motion visualization, and driver behavior scoring.
     </div>
   `;
 }
@@ -629,13 +767,17 @@ function showSummary(){
 /* ----------------- LOOP ------------------- */
 let last = performance.now();
 function loop(now){
-  if(!running) return;
+  if(!running){
+    drawRoad(speed,lastStatus);
+    return;
+  }
   const dt = Math.min((now - last)/1000,0.1);
   last = now;
   elapsed += dt;
   sampleTimer += dt;
 
   updatePhysics(dt);
+  drawRoad(speed,lastStatus);
 
   if(sampleTimer >= sampleInterval){
     sample();
@@ -647,6 +789,7 @@ function loop(now){
     running = false;
     log('Trip finished');
     showSummary();
+    drawRoad(speed,lastStatus);
     return;
   }
 
@@ -657,6 +800,7 @@ function loop(now){
 updateMode();
 limitVal.textContent = getLimit();
 log('Ready. Set parameters then press Start.');
+drawRoad(0,'OK');
 </script>
 </body>
 </html>
